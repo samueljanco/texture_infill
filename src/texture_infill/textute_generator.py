@@ -6,8 +6,8 @@ import time
 import numpy as np
 import torch
 
-import transformer
-import utils
+import .transformer
+import .utils
 
 
 def parse_args():
