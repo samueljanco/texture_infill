@@ -3,12 +3,12 @@ from copy import copy
 
 import cv2
 import numpy as np
-from dimensions_calculation import calculate_generator_dimensions
-from textute_generator import generate_texture
-from texture_postprocessor import postprocess_texture
-from color_application import color_textures
-from layer_composer import compose_layers
-from arguments import Arguments
+from .dimensions_calculation import calculate_generator_dimensions
+from .textute_generator import generate_texture
+from .texture_postprocessor import postprocess_texture
+from .color_application import color_textures
+from .layer_composer import compose_layers
+from .arguments import Arguments
 
 
 def mask_bbox(mask):
