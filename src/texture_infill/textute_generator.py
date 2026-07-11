@@ -6,9 +6,9 @@ import time
 import numpy as np
 import torch
 
-import .transformer
-import .utils
-
+from . import transformer
+from . import utils
+from importlib.resources import files
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -64,7 +64,12 @@ def generate_texture(texture_name, width, height, count, seed=None):
     device = "cpu" #"cuda" if torch.cuda.is_available() else "cpu"
 
     net = transformer.TransformerNetwork(input_channels=1, output_channels=1)
-    net.load_state_dict(torch.load(f"./models/{texture_name}_transformer_weight.pth", map_location=device))
+    model_path = (
+        files("texture_infill")
+        / "models"
+        / f"{texture_name}_transformer_weight.pth"
+    )
+    net.load_state_dict(torch.load(model_path, map_location=device))
     net = net.to(device).eval()
 
     #os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
