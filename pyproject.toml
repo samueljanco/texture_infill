@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "texture-infill"
+version = "0.1.0"
+description = "Texture infilling utilities"
+readme = "README.md"
+requires-python = ">=3.11"
+
+authors = [
+  {name = "Samuel Jančo"}
+]
+
+dependencies = [
+    "opencv-python",
+    "numpy",
+    "torch",
+    "torchvision",
+    "matplotlib",
+    "numba"
+]
