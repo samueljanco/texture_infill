@@ -21,3 +21,6 @@ dependencies = [
     "matplotlib",
     "numba"
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
