@@ -1,8 +1,8 @@
 
 import numpy as np
 import cv2
-from seams_density_modifier import modify_density
-from helpers import global_resize
+from .seams_density_modifier import modify_density
+from .helpers import global_resize
 import math
 
 
