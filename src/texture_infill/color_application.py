@@ -1,13 +1,12 @@
 
 import numpy as np
-import cv2
 
 
 def color_textures(textures, colors, strengths):
 
     colorized_textures = []
     for i in range(len(textures)):
-        colorized_texture = colorize_gray(textures[i], colors[i], strengths[i])
+        colorized_texture = colorize_gray(textures[i], colors[min(i, len(colors) - 1)], strengths[min(i, len(strengths) - 1)])
         colorized_textures.append(colorized_texture)
 
     return colorized_textures
