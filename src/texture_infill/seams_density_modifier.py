@@ -3,7 +3,7 @@ import numpy as np
 from numba import njit
 import math
 import matplotlib.pyplot as plt
-from helpers import rotate_image, global_resize, get_otsu_threshold
+from .helpers import rotate_image, global_resize, get_otsu_threshold
 
 
 
