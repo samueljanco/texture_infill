@@ -3,12 +3,12 @@ from copy import copy
 
 import cv2
 import numpy as np
-from .dimensions_calculation import calculate_generator_dimensions
-from .textute_generator import generate_texture
-from .texture_postprocessor import postprocess_texture
-from .color_application import color_textures
-from .layer_composer import compose_layers
-from .arguments import Arguments
+from dimensions_calculation import calculate_generator_dimensions
+from textute_generator import generate_texture
+from texture_postprocessor import postprocess_texture
+from color_application import color_textures
+from layer_composer import compose_layers
+from arguments import Arguments
 
 
 def mask_bbox(mask):
@@ -38,8 +38,11 @@ def mask_bbox(mask):
     return x_min, y_min, x_max, y_max
 
 
+
+
 def generate_infill(image, mask, args):
     run_args = copy(args)
+    run_args.clamp_arguments()
 
     if run_args.generate_square:
         target_width = run_args.width
@@ -72,6 +75,13 @@ def generate_infill(image, mask, args):
         run_args.scale_y,
     )
 
+    gen_width *= 1.15
+    gen_height *= 1.15
+
+    gen_width, gen_height = int(gen_width), int(gen_height)
+
+    print(gen_width, gen_height)
+
     textures = generate_texture(
         run_args.texture_name,
         gen_width,
@@ -81,6 +91,13 @@ def generate_infill(image, mask, args):
     )
 
     processed_textures = postprocess_texture(textures, run_args)
+
+    print(processed_textures[0].shape)
+
+    processed_textures = [
+        texture[:target_height, :target_width, ...]
+        for texture in processed_textures
+    ]
 
     colored_textures = color_textures(
         processed_textures,
@@ -94,7 +111,7 @@ def generate_infill(image, mask, args):
         run_args.background_brightness,
     )
 
-    result = result[:target_height, :target_width, ...]
+    print(result.shape)
 
     if run_args.generate_square:
         return result
@@ -120,16 +137,15 @@ if __name__ == "__main__":
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
     image = cv2.bitwise_and(image, image, mask=~mask)
 
-    args = Arguments()
-    args.texture_name = "texture_M"
-    args.count = 1
+    args = Arguments("texture_J")
+    args.count = 10
     args.scale_x = 1.0
     args.scale_y = 1.0
     args.density_x = 0.0
     args.density_y = 0.0
     args.rotation = 0.0
     args.global_scale = 1.0
-    args.colors = [(30, 60, 120), (30, 60, 120),(30, 60, 120), (30, 60, 120)]
+    args.colors = [(30, 60, 120), (120, 60, 120), (30, 60, 120)]
     args.color_strengths = [1.0, 1.0, 1.0, 1.0]
     args.generate_square = True
     args.background_brightness = 1.0
