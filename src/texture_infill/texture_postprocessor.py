@@ -142,8 +142,8 @@ def rotated_cropped_size(w, h, angle_degrees):
     cos_a = abs(math.cos(angle))
     sin_a = abs(math.sin(angle))
 
-    new_w = int(round(h * sin_a + w * cos_a))
-    new_h = int(round(h * cos_a + w * sin_a))
+    new_w = int(math.ceil(h * sin_a + w * cos_a))
+    new_h = int(math.ceil(h * cos_a + w * sin_a))
 
     crop_w, crop_h = largest_rotated_rect_size(w, h, angle_degrees)
 
@@ -182,10 +182,6 @@ def postprocess_texture(textures, args):
             )
 
         if abs(args.rotation) > 1e-8:
-            #rotation_interpolation = (
-            #     #if args.rotation_nearest else cv2.INTER_LINEAR
-            #)
-
             texture = rotate_and_crop_no_empty(
                 texture,
                 angle_degrees=args.rotation,
