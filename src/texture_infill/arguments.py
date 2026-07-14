@@ -70,3 +70,9 @@ class Arguments:
         self.seed = seed
 
 
+    def clamp_arguments(self):
+        self.scale_x = max(0.001, min(self.scale_x, 2.0))
+        self.scale_y = max(0.001, min(self.scale_y, 2.0))
+        self.density_x = max(-1.0, min(self.density_x, 1.0))
+        self.density_y = max(-1.0, min(self.density_y, 1.0))
+        self.global_scale = max(0.001, min(self.global_scale, 5.0))
