@@ -1,33 +1,53 @@
 import math
 
-def inverse_largest_rotated_rect_size(crop_w, crop_h, angle_degrees):
-    """
-    Inverse of largest_rotated_rect_size() for the common fully-constrained case.
 
-    Given the desired cropped size after rotation, estimate the source rectangle
-    size before rotation/crop.
+def required_pre_rotation_size_for_crop_at_least(
+    target_w: float,
+    target_h: float,
+    angle_degrees: float,
+) -> tuple[float, float]:
+    if target_w <= 0 or target_h <= 0:
+        raise ValueError("Target width and height must be positive.")
 
-    This works well for practical texture-generation use.
-    """
-
-    angle = math.radians(angle_degrees % 180.0)
-
-    if angle > math.pi / 2.0:
+    angle = abs(math.radians(angle_degrees)) % math.pi
+    if angle > math.pi / 2:
         angle = math.pi - angle
 
-    if abs(angle) < 1e-12:
-        return crop_w, crop_h
+    s = abs(math.sin(angle))
+    c = abs(math.cos(angle))
+    eps = 1e-12
 
-    if abs(angle - math.pi / 2.0) < 1e-12:
-        return crop_h, crop_w
+    if s < eps:
+        return target_w, target_h
 
-    sin_a = abs(math.sin(angle))
-    cos_a = abs(math.cos(angle))
+    if c < eps:
+        return target_h, target_w
 
-    src_w = crop_w * cos_a + crop_h * sin_a
-    src_h = crop_w * sin_a + crop_h * cos_a
+    candidates = []
 
-    return src_w, src_h
+    # Fully constrained case: exact inverse.
+    w_full = target_w * c + target_h * s
+    h_full = target_w * s + target_h * c
+
+    side_short = min(w_full, h_full)
+    side_long = max(w_full, h_full)
+
+    if side_short > 2.0 * s * c * side_long:
+        candidates.append((w_full, h_full))
+
+    # Half-constrained wide-source case.
+    # Output aspect tends toward c / s.
+    h_wide = max(2.0 * s * target_w, 2.0 * c * target_h)
+    w_wide = h_wide / (2.0 * s * c)
+    candidates.append((w_wide, h_wide))
+
+    # Half-constrained tall-source case.
+    # Output aspect tends toward s / c.
+    w_tall = max(2.0 * c * target_w, 2.0 * s * target_h)
+    h_tall = w_tall / (2.0 * s * c)
+    candidates.append((w_tall, h_tall))
+
+    return min(candidates, key=lambda wh: wh[0] * wh[1])
 
 def calculate_generator_dimensions(
     density_applicable,
@@ -72,33 +92,33 @@ def calculate_generator_dimensions(
         generated_w, generated_h
     """
 
-    # Undo final global scale
+    if required_w <= 0 or required_h <= 0:
+        raise ValueError("Required width and height must be positive.")
+
+    if global_scale <= 0 or scale_x <= 0 or scale_y <= 0:
+        raise ValueError("Scale values must be positive.")
+
+    # Undo final global scale.
     crop_w = required_w / global_scale
     crop_h = required_h / global_scale
 
-    # Undo directional stretch
-    #crop_w = crop_w / scale_x
-    #crop_h = crop_h / scale_y
-
-    # Undo rotation + crop
-    pre_rotation_w, pre_rotation_h = inverse_largest_rotated_rect_size(
+    # Undo rotation + largest safe crop.
+    pre_rotation_w, pre_rotation_h = required_pre_rotation_size_for_crop_at_least(
         crop_w,
         crop_h,
-        rotation_degrees
+        rotation_degrees,
     )
 
-    # Undo density seam dimension change only when applicable
+    # Undo the operation that happened before rotation.
     if density_applicable:
         generated_w_float = pre_rotation_w / (1.0 + density_x)
         generated_h_float = pre_rotation_h / (1.0 + density_y)
+
     else:
-        generated_w_float = pre_rotation_w
-        generated_h_float = pre_rotation_h
+        generated_w_float = pre_rotation_w / scale_x
+        generated_h_float = pre_rotation_h / scale_y
 
-    generated_w = int(math.ceil(generated_w_float))
-    generated_h = int(math.ceil(generated_h_float))
-
-    generated_w = max(1, generated_w)
-    generated_h = max(1, generated_h)
+    generated_w = max(1, int(math.ceil(generated_w_float)))
+    generated_h = max(1, int(math.ceil(generated_h_float)))
 
     return generated_w, generated_h
