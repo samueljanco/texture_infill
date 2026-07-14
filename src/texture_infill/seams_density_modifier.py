@@ -1,10 +1,9 @@
-import argparse
 import cv2
 import numpy as np
 from numba import njit
 import math
 import matplotlib.pyplot as plt
-from .helpers import rotate_image, global_resize, get_otsu_threshold
+from helpers import rotate_image, global_resize, get_otsu_threshold
 
 
 
@@ -201,7 +200,6 @@ def seams_removal_grayscale(
 
     mask_for_numba = np.ascontiguousarray(binary.astype(np.float64))
 
-
     #if has_mask:
     energy = apply_mask_to_energy_fast(energy, mask_for_numba)
 
@@ -282,7 +280,6 @@ def get_maximum_seam_from_energy(energy_source):
         boolmask[y, seam_idx[y]] = False
 
     return seam_idx, boolmask
-
 
 @njit(cache=True)
 def get_maximum_unrestricted_seam_from_energy(
@@ -503,12 +500,6 @@ def seams_insertion_grayscale(im, num_add):
     im = apply_binary_mask_to_gray(im , binary)
     temp_im = im.copy()
 
-
-
-
-    # IMPORTANT:
-    # If binary == 1 means background/gap and binary == 0 means white object,
-    # then forbidden_mask must be True on white/object pixels.
     forbidden_mask = np.ascontiguousarray((binary == 1))
 
     # Optional, but useful if apply_mask_to_energy_fast expects large mask values.
@@ -533,7 +524,7 @@ def seams_insertion_grayscale(im, num_add):
             temp_energy,
             forbidden_mask,
             jump_penalty=10000.0,
-            return_none=True
+            return_none=(len(seams_record) > 0)
         )
 
         if seam_idx is None:
@@ -585,84 +576,6 @@ def seams_insertion_grayscale(im, num_add):
 
     return im
 
-
-def seams_insertion_grayscale1(
-    im,
-    num_add
-):
-    """
-    Insert num_add vertical seams.
-
-    If not enough valid seams can be found, already found seams are duplicated
-    and distributed evenly until num_add seams are inserted.
-
-    All inserted seam pixels are black.
-    """
-
-    seams_record = []
-
-    temp_im = im.copy()
-
-    temp_energy, _, _, _, _, _, binary = directional_gap_energy_numba(
-        temp_im,
-        30
-    )
-
-    mask_for_numba = np.ascontiguousarray(binary.astype(np.float64))
-
-    temp_energy = apply_mask_to_energy_fast(temp_energy, mask_for_numba)
-
-    #plt.imshow(temp_energy, cmap="inferno")
-    #plt.colorbar()
-    #plt.show()
-
-    for i in range(num_add):
-        seam_idx, boolmask = get_maximum_unrestricted_seam_from_energy(temp_energy, mask_for_numba, jump_penalty=100, return_none=True)
-
-        if seam_idx is None:
-            print(f"no more valid insertion seams after {len(seams_record)}/{num_add}")
-            break
-
-        seams_record.append(seam_idx.copy())
-
-        temp_im = remove_seam_grayscale_fast(temp_im, boolmask)
-        temp_energy = remove_seam_grayscale_fast(temp_energy, boolmask)
-        mask_for_numba = remove_mask_grayscale_fast(mask_for_numba, boolmask)
-
-        if (i + 1) % 10 == 0 or i == 0 or i == num_add - 1:
-            print(f"recorded insertion seam {i + 1}/{num_add}")
-
-    if len(seams_record) == 0:
-        print("no valid insertion seams found; returning image unchanged")
-
-        return im
-
-    seams_to_insert = _expand_recorded_seams_evenly(seams_record, num_add)
-
-    if len(seams_record) < num_add:
-        print(
-            f"found {len(seams_record)} valid seams; "
-            f"duplicating them to insert {num_add} seams"
-        )
-
-    seams_to_insert.reverse()
-
-    ## TODO: fix insertion of the seams
-
-    for i in range(num_add):
-        seam = seams_to_insert.pop()
-
-        im = add_black_seam_grayscale_fast(im, seam)
-
-        for remaining_seam in seams_to_insert:
-            for y in range(remaining_seam.shape[0]):
-                if remaining_seam[y] >= seam[y]:
-                    remaining_seam[y] += 1
-
-        if (i + 1) % 10 == 0 or i == 0 or i == num_add - 1:
-            print(f"inserted black seam {i + 1}/{num_add}, shape={im.shape}")
-
-    return im
 
 def seam_carve_grayscale_by_delta(
     im,
